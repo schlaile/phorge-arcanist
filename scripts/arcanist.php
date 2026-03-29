@@ -49,10 +49,6 @@ function arcanist_adjust_php_include_path() {
 arcanist_adjust_php_include_path();
 
 function arcanist_should_use_runtime($help, $workflow) {
-  if (getenv(ArcanistRuntime::ENV_LEGACY_FALLTHROUGH)) {
-    return false;
-  }
-
   if ($help) {
     return true;
   }

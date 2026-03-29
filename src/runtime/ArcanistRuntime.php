@@ -2,8 +2,6 @@
 
 final class ArcanistRuntime {
 
-  const ENV_LEGACY_FALLTHROUGH = 'ARCANIST_RUNTIME_LEGACY_FALLTHROUGH';
-
   private $workflows;
   private $logEngine;
   private $lastInterruptTime;
@@ -232,21 +230,10 @@ final class ArcanistRuntime {
     $arcanist_root = dirname($arcanist_root);
     $bin = $arcanist_root.'/scripts/arcanist.php';
 
-    $old_fallthrough = getenv(self::ENV_LEGACY_FALLTHROUGH);
-    putenv(self::ENV_LEGACY_FALLTHROUGH.'=1');
-
-    try {
-      $err = phutil_passthru(
-        'php -f %R -- %Ls',
-        $bin,
-        array_slice($argv, 1));
-    } finally {
-      if ($old_fallthrough === false) {
-        putenv(self::ENV_LEGACY_FALLTHROUGH);
-      } else {
-        putenv(self::ENV_LEGACY_FALLTHROUGH.'='.$old_fallthrough);
-      }
-    }
+    $err = phutil_passthru(
+      'php -f %R -- %Ls',
+      $bin,
+      array_slice($argv, 1));
 
     return $err;
   }
