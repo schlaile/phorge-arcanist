@@ -48,6 +48,18 @@ function arcanist_adjust_php_include_path() {
 }
 arcanist_adjust_php_include_path();
 
+function arcanist_should_use_runtime($help, $workflow) {
+  if (getenv(ArcanistRuntime::ENV_LEGACY_FALLTHROUGH)) {
+    return false;
+  }
+
+  if ($help) {
+    return true;
+  }
+
+  return $workflow->supportsToolset(new ArcanistArcToolset());
+}
+
 ini_set('memory_limit', -1);
 
 $original_argv = $argv;
@@ -253,6 +265,15 @@ try {
     $args,
     $configuration_manager,
     $console);
+
+  if (arcanist_should_use_runtime($help, $workflow)) {
+    $runtime_argv = $original_argv;
+    $runtime_argv[0] = ArcanistArcToolset::TOOLSETKEY;
+
+    $runtime = new ArcanistRuntime();
+    exit($runtime->execute($runtime_argv));
+  }
+
   $workflow->setConfigurationManager($configuration_manager);
   $workflow->setArcanistConfiguration($config);
   $workflow->setCommand($command);
