@@ -58,7 +58,6 @@ final class PhutilParserGenerator extends Phobject {
   private $rules;
   private $startRule = 'start';
   private $states = array();
-  private $sets = array();
   private $successor = array();
   private $setHashes = array();
   private $actionTable;
@@ -551,7 +550,6 @@ final class PhutilParserGenerator extends Phobject {
 
     $end = $this->getEndSymbol();
     $epsilon = $this->getEpsilonSymbol();
-    $eof = $this->getEOFSymbol();
 
     $accept_epsilon = true;
     foreach ($production as $symbol) {

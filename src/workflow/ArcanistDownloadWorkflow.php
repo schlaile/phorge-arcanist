@@ -3,10 +3,6 @@
 final class ArcanistDownloadWorkflow
   extends ArcanistArcWorkflow {
 
-  private $id;
-  private $saveAs;
-  private $show;
-
   public function getWorkflowName() {
     return 'download';
   }
@@ -48,10 +44,6 @@ EOTEXT
       throw new ArcanistUsageException(
         pht('Specify file by ID, e.g. %s.', 'F123'));
     }
-
-    $this->id = (int)ltrim($file, 'F');
-    $this->saveAs = $this->getArgument('as');
-    $this->show = $this->getArgument('show');
   }
 
 
@@ -100,7 +92,6 @@ EOTEXT
       $try_unique = false;
     }
 
-    $file_handle = null;
     if (!$is_stdout) {
       if ($try_unique) {
         $path = Filesystem::writeUniqueFile($path, '');

@@ -7,7 +7,6 @@ final class ArcanistBundle extends Phobject {
 
   private $changes;
   private $conduit;
-  private $blobs = array();
   private $diskPath;
   private $baseRevision;
   private $revisionID;
@@ -664,7 +663,8 @@ final class ArcanistBundle extends Phobject {
 
   /**
    * @param array<ArcanistDiffHunk> $hunks
-   * @param $eol
+   * @param string $eol
+   * @return string
    */
   private function buildHunkChanges(array $hunks, $eol) {
     assert_instances_of($hunks, ArcanistDiffHunk::class);

@@ -389,8 +389,6 @@ try {
 
   $hosts_config = idx($user_config, 'hosts', array());
   $host_config = idx($hosts_config, $conduit_uri, array());
-  $user_name = idx($host_config, 'user');
-  $certificate = idx($host_config, 'cert');
   $conduit_token = idx($host_config, 'token');
   if ($force_token) {
     $conduit_token = $force_token;
@@ -402,8 +400,6 @@ try {
 
   $description = implode(' ', $original_argv);
   $credentials = array(
-    'user' => $user_name,
-    'certificate' => $certificate,
     'description' => $description,
     'token' => $conduit_token,
   );
@@ -416,7 +412,7 @@ try {
   $workflow->setConduitEngine($engine);
 
   if ($need_auth) {
-    if ((!$user_name || !$certificate) && (!$conduit_token)) {
+    if (!$conduit_token) {
       $arc = 'arc';
       if ($force_conduit) {
         $arc .= csprintf(' --conduit-uri=%s', $conduit_uri);
@@ -475,17 +471,15 @@ try {
   try {
     $err = $workflow->run();
     $config->didRunWorkflow($command, $workflow, $err);
-  } catch (Exception $e) {
+  } finally {
     $workflow->finalize();
-    throw $e;
   }
-  $workflow->finalize();
   exit((int)$err);
 
 } catch (ArcanistNoEffectException $ex) {
   echo $ex->getMessage()."\n";
 
-} catch (Exception $ex) {
+} catch (Throwable $ex) {
   $is_usage = ($ex instanceof ArcanistUsageException);
   if ($is_usage) {
     fwrite(STDERR, phutil_console_format(

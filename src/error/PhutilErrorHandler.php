@@ -181,7 +181,7 @@ final class PhutilErrorHandler extends Phobject {
    * @param string $file File where the error occurred.
    * @param int $line Line on which the error occurred.
    * @param mixed $ctx (optional) Error context information.
-   * @return void
+   * @return bool
    * @task internal
    */
   public static function handleError($num, $str, $file, $line, $ctx = null) {
@@ -226,7 +226,7 @@ final class PhutilErrorHandler extends Phobject {
           'trace'      => $trace,
         ));
 
-      return;
+      return true;
     }
 
     // Convert typehint failures into exceptions.
@@ -472,7 +472,6 @@ final class PhutilErrorHandler extends Phobject {
 
     $bootloader = PhutilBootloader::getInstance();
     $libraries = $bootloader->getAllLibraries();
-    $roots = array();
     foreach ($libraries as $library) {
       $root = $bootloader->getLibraryRoot($library);
       // For these libraries, the effective root is one level up.

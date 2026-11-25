@@ -628,7 +628,6 @@ abstract class ArcanistLandEngine
     }
 
     $build_map = array();
-    $failure_map = array();
     $buildable_map = mpull($buildable_refs, null, 'getPHID');
     $revision_map = mpull($revision_refs, null, 'getDiffPHID');
     foreach ($problem_builds as $build_ref) {
@@ -649,8 +648,6 @@ abstract class ArcanistLandEngine
 
       $build_map[$revision_phid]['buildRefs'][] = $build_ref;
     }
-
-    $log = $this->getLogEngine();
 
     if ($has_failures) {
       if ($has_ongoing) {
@@ -1246,7 +1243,6 @@ abstract class ArcanistLandEngine
 
     $this->setLocalState($local_state);
 
-    $seen_into = array();
     try {
       $last_key = last_key($sets);
 
@@ -1280,22 +1276,6 @@ abstract class ArcanistLandEngine
 
               // TODO: If the push fails, fetch and retry if the remote ref
               // has moved ahead of us.
-
-              if ($this->getIntoLocal()) {
-                $can_retry = false;
-              } else if ($this->getIntoEmpty()) {
-                $can_retry = false;
-              } else if ($this->getIntoRemote() !== $this->getOntoRemote()) {
-                $can_retry = false;
-              } else {
-                $can_retry = false;
-              }
-
-              if ($can_retry) {
-                // New commit state here
-                $into_commit = '..';
-                continue;
-              }
 
               throw new PhutilArgumentUsageException(
                 $ex->getMessage());
@@ -1348,8 +1328,6 @@ abstract class ArcanistLandEngine
   }
 
   protected function validateArguments() {
-    $log = $this->getLogEngine();
-
     $into_local = $this->getIntoLocalArgument();
     $into_empty = $this->getIntoEmptyArgument();
     $into_remote = $this->getIntoRemoteArgument();
@@ -1546,7 +1524,6 @@ abstract class ArcanistLandEngine
    */
   private function filterCommitSets(array $sets) {
     assert_instances_of($sets, ArcanistLandCommitSet::class);
-    $log = $this->getLogEngine();
 
     // If some of the ancestor revisions are already closed, and the user did
     // not specifically indicate that we should land them, and we are using
@@ -1605,15 +1582,11 @@ abstract class ArcanistLandEngine
     return $sets;
   }
 
-  final protected function newPassthruCommand($pattern /* , ... */) {
+  final protected function newPassthruCommand($pattern, ...$args) {
     $workflow = $this->getWorkflow();
-    $argv = func_get_args();
 
     $api = $this->getRepositoryAPI();
-
-    $passthru = call_user_func_array(
-      array($api, 'newPassthru'),
-      $argv);
+    $passthru = $api->newPassthru($pattern, ...$args);
 
     $command = $workflow->newCommand($passthru)
       ->setResolveOnError(true);
@@ -1621,12 +1594,8 @@ abstract class ArcanistLandEngine
     return $command;
   }
 
-  final protected function newPassthru($pattern /* , ... */) {
-    $argv = func_get_args();
-
-    $command = call_user_func_array(
-      array($this, 'newPassthruCommand'),
-      $argv);
+  final protected function newPassthru($pattern, ...$args) {
+    $command = $this->newPassthruCommand($pattern, ...$args);
 
     return $command->execute();
   }

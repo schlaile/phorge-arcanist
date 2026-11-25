@@ -10,11 +10,10 @@ abstract class PhutilExecutableFuture extends Future {
   private $cwd;
   private $resolveOnError = true;
 
-  final public function __construct($pattern /* , ... */) {
-    $args = func_get_args();
+  final public function __construct($pattern, ...$args) {
 
     if ($pattern instanceof PhutilCommandString) {
-      if (count($args) !== 1) {
+      if (count($args) !== 0) {
         throw new Exception(
           pht(
             'Command (of class "%s") was constructed with a '.
@@ -25,7 +24,7 @@ abstract class PhutilExecutableFuture extends Future {
       }
       $this->command = $pattern;
     } else {
-      $this->command = call_user_func_array('csprintf', $args);
+      $this->command = csprintf($pattern, ...$args);
     }
 
     $this->didConstruct();
@@ -60,7 +59,8 @@ abstract class PhutilExecutableFuture extends Future {
    *   // Env will have ONLY "X".
    *   $exec->setEnv(array('X' => 'y'), $wipe_process_env = true);
    *
-   * @param array<string, string> $env Dictionary of environmental variables.
+   * @param array<string, string|int> $env Dictionary of environmental
+   *   variables.
    * @param bool $wipe_process_env (optional) Pass `true` to replace the
    *   existing environment.
    * @return $this

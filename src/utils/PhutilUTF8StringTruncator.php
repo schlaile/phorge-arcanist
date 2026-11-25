@@ -78,7 +78,7 @@ final class PhutilUTF8StringTruncator extends Phobject {
   public function setTerminator($terminator) {
     $this->terminator = $terminator;
     $this->terminatorBytes = strlen($terminator);
-    $this->terminatorCodepoints = count(phutil_utf8v($terminator));
+    $this->terminatorCodepoints = phutil_utf8_strlen($terminator);
     $this->terminatorGlyphs = count(phutil_utf8v_combined($terminator));
     return $this;
   }
@@ -263,7 +263,8 @@ final class PhutilUTF8StringTruncator extends Phobject {
 
       if (isset($break_characters[$c])) {
         $word_boundary = $ii;
-      } else if (isset($stop_characters[$c])) {
+      } else if (isset($stop_characters[$c]) &&
+        ctype_space($string_gv[$ii + 1])) {
         $stop_boundary = $ii + 1;
         break;
       } else {

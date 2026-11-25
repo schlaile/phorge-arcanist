@@ -78,11 +78,9 @@ final class PhutilTranslator extends Phobject {
    * @phutil-external-symbol function phutil_escape_html
    * @phutil-external-symbol function phutil_safe_html
    */
-  public function translate($text /* , ... */) {
-    $args = func_get_args();
-
+  public function translate(string $text, ...$args) {
     if ($this->willTranslateCallback) {
-      call_user_func_array($this->willTranslateCallback, $args);
+      call_user_func($this->willTranslateCallback, $text, ...$args);
     }
 
     if (isset($this->translations[$text])) {
@@ -92,7 +90,7 @@ final class PhutilTranslator extends Phobject {
     }
 
     while (is_array($translation)) {
-      $arg = next($args);
+      $arg = current($args);
       $translation = $this->chooseVariant($translation, $arg);
       if ($translation === null) {
         $pos = key($args);
@@ -113,12 +111,14 @@ final class PhutilTranslator extends Phobject {
           $kind,
           $text);
       }
+      next($args);
     }
-    array_shift($args);
 
     foreach ($args as $k => $arg) {
       if ($arg instanceof PhutilNumber) {
-        $args[$k] = $this->formatNumber($arg->getNumber(), $arg->getDecimals());
+        $args[$k] = $this->formatNumber(
+          (float)$arg->getNumber(),
+          $arg->getDecimals());
       }
     }
 
@@ -137,6 +137,7 @@ final class PhutilTranslator extends Phobject {
       foreach ($args as $k => $arg) {
         $args[$k] = (string)phutil_escape_html($arg);
       }
+      $translation = phutil_escape_html($translation);
     }
 
     try {

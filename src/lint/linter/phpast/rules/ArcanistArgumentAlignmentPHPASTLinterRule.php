@@ -4,6 +4,7 @@
  * @phutil-external-symbol class PhpParser\Node
  * @phutil-external-symbol class PhpParser\Node\Expr\CallLike
  * @phutil-external-symbol class PhpParser\Node\Expr\MethodCall
+ * @phutil-external-symbol class PhpParser\Node\Scalar\String_
  */
 final class ArcanistArgumentAlignmentPHPASTLinterRule
   extends ArcanistPHPASTNodeLinterRule {
@@ -35,8 +36,10 @@ final class ArcanistArgumentAlignmentPHPASTLinterRule
     $last = last($arguments);
 
     if (
-      $node instanceof PhpParser\Node\Expr\MethodCall &&
-      $node->var instanceof PhpParser\Node\Expr\MethodCall) {
+      $node instanceof PhpParser\Node\Expr\MethodCall && (
+        $node->var instanceof PhpParser\Node\Expr\MethodCall ||
+        $node->var->getStartLine() !== $node->name->getStartLine())) {
+
       $start_line = $node->name->getStartLine();
     } else {
       $start_line = $node->getStartLine();
@@ -52,6 +55,15 @@ final class ArcanistArgumentAlignmentPHPASTLinterRule
 
     $last_argument_line = $start_line;
     foreach ($arguments as $argument) {
+      $kind = $argument->value->getAttribute('kind');
+      if (
+        $argument === $first &&
+        $first->value instanceof PhpParser\Node\Scalar\String_ &&
+        ($kind === PhpParser\Node\Scalar\String_::KIND_HEREDOC ||
+         $kind === PhpParser\Node\Scalar\String_::KIND_NOWDOC)) {
+        continue;
+      }
+
       if ($last_argument_line === $argument->getStartLine()) {
         $before = $this->getNonsemanticTokensBeforeNode(
           $argument,

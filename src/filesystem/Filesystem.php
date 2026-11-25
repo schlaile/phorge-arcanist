@@ -52,6 +52,8 @@ final class Filesystem extends Phobject {
   /**
    * Make assertions about the state of path in preparation for
    * writeFile() and writeFileIfChanged().
+   *
+   * @param string $path File path to write.
    */
   public static function assertWritableFile($path) {
     $path = self::resolvePath($path);
@@ -80,13 +82,14 @@ final class Filesystem extends Phobject {
    * detailed exceptions on failure. If the file already exists, it will be
    * overwritten.
    *
-   * @param  string  $path File path to write. This file must be writable and
-   *                 its parent directory must exist.
-   * @param  string  $data Data to write.
+   * @param  string|TempFile  $path File path to write. This file must be
+   *                          writable and its parent directory must exist.
+   * @param  string           $data Data to write.
    *
    * @task   file
    */
   public static function writeFile($path, $data) {
+    $path = (string)$path;
     self::assertWritableFile($path);
 
     if (@file_put_contents($path, $data) === false) {
@@ -486,10 +489,9 @@ final class Filesystem extends Phobject {
   /**
    * Generate a random integer value in a given range.
    *
-   * This method uses less-entropic random sources under older versions of PHP.
-   *
    * @param int $min Minimum value, inclusive.
    * @param int $max Maximum value, inclusive.
+   * @deprecated Call PHP's random_int() directly.
    */
   public static function readRandomInteger($min, $max) {
     if (!is_int($min)) {
@@ -508,28 +510,7 @@ final class Filesystem extends Phobject {
           $max));
     }
 
-    // Under PHP 7.2.0 and newer, we can just use "random_int()". This function
-    // is intended to generate cryptographically usable entropy.
-    if (function_exists('random_int')) {
-      return random_int($min, $max);
-    }
-
-    // We could find a stronger source for this, but correctly converting raw
-    // bytes to an integer range without biases is fairly hard and it seems
-    // like we're more likely to get that wrong than suffer a PRNG prediction
-    // issue by falling back to "mt_rand()".
-
-    if (($max - $min) > mt_getrandmax()) {
-      throw new Exception(
-        pht('mt_rand() range is smaller than the requested range.'));
-    }
-
-    $result = mt_rand($min, $max);
-    if (!is_int($result)) {
-      throw new Exception(pht('Bad return value from mt_rand().'));
-    }
-
-    return $result;
+    return random_int($min, $max);
   }
 
 
@@ -714,7 +695,7 @@ final class Filesystem extends Phobject {
 
     $tries = 3;
     do {
-      $dir = $base.substr(base_convert(md5((string)mt_rand()), 16, 36), 0, 16);
+      $dir = $base.bin2hex(random_bytes(8));
       try {
         self::createDirectory($dir, $umask);
         break;
@@ -883,6 +864,23 @@ final class Filesystem extends Phobject {
   }
 
   /**
+   * Given a PHAR path (path to a file inside a PHAR archive), return a path of
+   * the containing PHAR archive file.
+   * Return null if not a PHAR path.
+   *
+   * @return string|null
+   * @task phar
+   */
+  public static function getPharArchivePath($path) {
+    if (!self::isPharPath($path)) {
+      return null;
+    }
+
+    list($archive) = self::parsePharUri($path);
+    return $archive;
+  }
+
+  /**
    *
    * @task phar
    */
@@ -954,8 +952,8 @@ final class Filesystem extends Phobject {
    */
   private static function guardPharFiles($path) {
     static $php_version_good = null;
+    $min_version = '8.0';
     if ($php_version_good === null) {
-      $min_version = '8.0';
       $cur_version = phpversion();
       if (version_compare($cur_version, $min_version, '<')) {
         $php_version_good = false;

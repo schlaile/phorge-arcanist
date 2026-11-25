@@ -216,7 +216,7 @@ final class ArcanistRuntime {
         tsprintf(
           '%s <__%s__>',
           pht('Learn More:'),
-          'https://secure.phabricator.com/T13491'));
+          'https://we.phorge.it/u/noninteractivearc'));
 
       throw new PhutilArgumentUsageException(
         pht('Missing required "--" in argument list.'));
@@ -475,7 +475,6 @@ final class ArcanistRuntime {
       pht('LOAD'),
       pht('Loading library from "%s"...', $location));
 
-    $error = null;
     try {
       phutil_load_library($location);
     } catch (PhutilLibraryConflictException $ex) {

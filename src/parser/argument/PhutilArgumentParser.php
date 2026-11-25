@@ -291,7 +291,26 @@ final class PhutilArgumentParser extends Phobject {
 
     foreach ($specs as $spec) {
       if ($spec->getWildcard()) {
-        $this->results[$spec->getName()] = $this->filterWildcardArgv($argv);
+        $wildcard_values = $this->filterWildcardArgv($argv);
+
+        if ($spec->getRepeatable() === false) {
+          switch (count($wildcard_values)) {
+            case 0:
+              $wildcard_values = null;
+              break;
+            case 1:
+              $wildcard_values = head($wildcard_values);
+              break;
+            default:
+              throw new PhutilArgumentUsageException(
+                pht(
+                  'Wildcard argument %s cannot be specified more then once!',
+                  $spec->getName()));
+          }
+
+        }
+
+        $this->results[$spec->getName()] = $wildcard_values;
         $argv = array();
         break;
       }
@@ -371,13 +390,16 @@ final class PhutilArgumentParser extends Phobject {
    *
    * @param   array $workflows List of argument specs, see
    *                @{class:PhutilArgumentSpecification}.
-   * @return  $this
+   * @return  PhutilArgumentWorkflow|never
    * @task parse
    */
   public function parseWorkflows(array $workflows) {
     try {
       return $this->parseWorkflowsFull($workflows);
     } catch (PhutilArgumentUsageException $ex) {
+      $this->printUsageException($ex);
+      exit(self::PARSE_ERROR_CODE);
+    } catch (ArcanistUsageException $ex) {
       $this->printUsageException($ex);
       exit(self::PARSE_ERROR_CODE);
     }
@@ -395,9 +417,9 @@ final class PhutilArgumentParser extends Phobject {
    *
    * @param array<PhutilArgumentWorkflow> $workflows List of
    *                                      @{class:PhutilArgumentWorkflow}s.
-   * @return PhutilArgumentWorkflow|int Returns the chosen workflow if it is
-   *                                    not executable, or executes it and
-   *                                    exits with a return code if it is.
+   * @return PhutilArgumentWorkflow|never Returns the chosen workflow if it is
+   *                                      not executable, or executes it and
+   *                                      exits with a return code if it is.
    * @task parse
    */
   public function parseWorkflowsFull(array $workflows) {
@@ -417,7 +439,7 @@ final class PhutilArgumentParser extends Phobject {
 
       if (isset($this->workflows[$name])) {
         throw new PhutilArgumentSpecificationException(
-          pht("Two workflows with name '%s!", $name));
+          pht("Two workflows with name '%s!'", $name));
       }
 
       $this->workflows[$name] = $workflow;
@@ -845,7 +867,7 @@ final class PhutilArgumentParser extends Phobject {
     return implode("\n", $out);
   }
 
-  public function printUsageException(PhutilArgumentUsageException $ex) {
+  public function printUsageException(Exception $ex) {
     $message = tsprintf(
       "**%s** %B\n",
       pht('Usage Exception:'),
@@ -881,6 +903,7 @@ final class PhutilArgumentParser extends Phobject {
             '--'));
       }
     }
+
     return array_values($argv);
   }
 
@@ -993,17 +1016,12 @@ final class PhutilArgumentParser extends Phobject {
     return implode("\n", $out);
   }
 
-  private function format($str /* , ... */) {
-    $args = func_get_args();
-    return call_user_func_array(
-      'phutil_console_format',
-      $args);
+  private function format($str, ...$args) {
+    return phutil_console_format($str, ...$args);
   }
 
-  private function indent($level, $str /* , ... */) {
-    $args = func_get_args();
-    $args = array_slice($args, 1);
-    $text = call_user_func_array(array($this, 'format'), $args);
+  private function indent($level, $str, ...$args) {
+    $text = $this->format($str, ...$args);
     return phutil_console_wrap($text, $level);
   }
 

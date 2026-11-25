@@ -324,12 +324,12 @@ function ipull(array $list, $index, $key_index = null) {
  * @param   string  $by Name of a method, like 'getType', to call on each
  *                  object in order to determine which group it should be
  *                  placed into.
- * @param   string  $methods,... Zero or more additional method names, to
+ * @param   string  ...$methods Zero or more additional method names, to
  *                  subgroup the groups.
  * @return  array   Dictionary mapping distinct method returns to lists of
  *                  all objects which returned that value.
  */
-function mgroup(array $list, $by /* , ... */) {
+function mgroup(array $list, $by, ...$methods) {
   $map = mpull($list, $by);
 
   $groups = array();
@@ -344,13 +344,9 @@ function mgroup(array $list, $by /* , ... */) {
     $groups[$group][$key] = $list[$key];
   }
 
-  $args = func_get_args();
-  $args = array_slice($args, 2);
-  if ($args) {
-    array_unshift($args, null);
+  if ($methods) {
     foreach ($groups as $group_key => $grouped) {
-      $args[0] = $grouped;
-      $groups[$group_key] = call_user_func_array('mgroup', $args);
+      $groups[$group_key] = mgroup($grouped, ...$methods);
     }
   }
 
@@ -366,30 +362,28 @@ function mgroup(array $list, $by /* , ... */) {
  * @param   array   $list List of arrays to group by some index value.
  * @param   string  $by Name of an index to select from each array in order to
  *                  determine which group it should be placed into.
- * @param   string  $methods,... Zero or more additional indexes names, to
+ * @param   string  ...$indices Zero or more additional indexes names, to
  *                  subgroup the groups.
  * @return  array   Dictionary mapping distinct index values to lists of
  *                  all objects which had that value at the index.
  */
-function igroup(array $list, $by /* , ... */) {
+function igroup(array $list, $by, ...$indices) {
   $map = ipull($list, $by);
 
   $groups = array();
   foreach ($map as $group) {
+    $group = $group ?? '';
     $groups[$group] = array();
   }
 
   foreach ($map as $key => $group) {
+    $group = $group ?? '';
     $groups[$group][$key] = $list[$key];
   }
 
-  $args = func_get_args();
-  $args = array_slice($args, 2);
-  if ($args) {
-    array_unshift($args, null);
+  if ($indices) {
     foreach ($groups as $group_key => $grouped) {
-      $args[0] = $grouped;
-      $groups[$group_key] = call_user_func_array('igroup', $args);
+      $groups[$group_key] = igroup($grouped, ...$indices);
     }
   }
 
@@ -638,7 +632,7 @@ function ifilter(array $list, $index, $negate = false) {
  * key order on an existing dictionary.
  *
  * @param  array   $dict Dictionary of key-value pairs to select from.
- * @param  array<string> $keys List of keys to select.
+ * @param  array<string|int> $keys List of keys to select.
  * @return array         Dictionary of only those key-value pairs where the key
  *                       was present in the list of keys to select. Ordering is
  *                       determined by the list order.
@@ -763,11 +757,10 @@ function assert_stringlike($parameter) {
  * Returns the first argument which is not strictly null, or `null` if there
  * are no such arguments. Identical to the MySQL function of the same name.
  *
- * @param  mixed       $args,... Zero or more arguments of any type.
+ * @param  mixed       ...$args Zero or more arguments of any type.
  * @return mixed       First non-`null` arg, or null if no such arg exists.
  */
-function coalesce(/* ... */) {
-  $args = func_get_args();
+function coalesce(...$args) {
   foreach ($args as $arg) {
     if ($arg !== null) {
       return $arg;
@@ -785,12 +778,11 @@ function coalesce(/* ... */) {
  *
  *   $display_name = nonempty($user_name, $full_name, "Anonymous");
  *
- * @param  mixed       $args,... Zero or more arguments of any type.
+ * @param  mixed       ...$args Zero or more arguments of any type.
  * @return mixed       First non-`empty()` arg, or last arg if no such arg
  *                     exists, or null if you passed in zero args.
  */
-function nonempty(/* ... */) {
-  $args = func_get_args();
+function nonempty(...$args) {
   $result = null;
   foreach ($args as $arg) {
     $result = $arg;
@@ -956,9 +948,9 @@ function phutil_split_lines($corpus, $retain_endings = true) {
 
   // Split on "\r\n" or "\n".
   if ($retain_endings) {
-    $lines = preg_split('/(?<=\n)/', $corpus);
+    $lines = preg_split('/(?<=\n)/', (string)$corpus);
   } else {
-    $lines = preg_split('/\r?\n/', $corpus);
+    $lines = preg_split('/\r?\n/', (string)$corpus);
   }
 
   // If the text ends with "\n" or similar, we'll end up with an empty string
@@ -1406,23 +1398,23 @@ function phutil_json_encode($value) {
  */
 function phutil_validate_json($value, $path = '') {
   if ($value === null) {
-    return;
+    return null;
   }
 
   if ($value === true) {
-    return;
+    return null;
   }
 
   if ($value === false) {
-    return;
+    return null;
   }
 
   if (is_int($value)) {
-    return;
+    return null;
   }
 
   if (is_float($value)) {
-    return;
+    return null;
   }
 
   if (is_array($value)) {
@@ -1466,7 +1458,7 @@ function phutil_validate_json($value, $path = '') {
     }
   }
 
-  return;
+  return null;
 }
 
 
@@ -1710,7 +1702,7 @@ function phutil_hashes_are_identical($u, $v) {
 /**
  * Build a query string from a dictionary.
  *
- * @param array<string, string> $parameters Dictionary of parameters.
+ * @param array<string, string|bool> $parameters Dictionary of parameters.
  * @return string HTTP query string.
  */
 function phutil_build_http_querystring(array $parameters) {
@@ -1725,7 +1717,7 @@ function phutil_build_http_querystring(array $parameters) {
 /**
  * Build a query string from a list of parameter pairs.
  *
- * @param array<array<string, string>> $pairs List of pairs.
+ * @param array<array<string|int, string|bool>> $pairs List of pairs.
  * @return string HTTP query string.
  */
 function phutil_build_http_querystring_from_pairs(array $pairs) {
@@ -1759,7 +1751,7 @@ function phutil_build_http_querystring_from_pairs(array $pairs) {
  *
  * @param scalar $key HTTP parameter key.
  * @param scalar $value HTTP parameter value.
- * @return array<string, string> Key and value as strings.
+ * @return array{0:string, 1:string} Key and value as strings.
  */
 function phutil_http_parameter_pair($key, $value) {
   try {
@@ -1807,21 +1799,25 @@ function phutil_decode_mime_header($header) {
 /**
  * Perform a "(string)" cast without disabling standard exception behavior.
  *
- * When PHP invokes "__toString()" automatically, it fatals if the method
- * raises an exception. In older versions of PHP (until PHP 7.1), this fatal is
- * fairly opaque and does not give you any information about the exception
- * itself, although newer versions of PHP at least include the exception
- * message.
+ * You should use this function whenever the value you're trying to cast could
+ * be an array. Ideally, you have verified that whatever you're casting is not
+ * an array already.
+ *
+ * When PHP invokes "__toString()" automatically, prior to PHP 7.4, it fatals
+ * if the method raises an exception. Since PHP 7.0, this at least includes the
+ * exception message.
  *
  * This is documented on the "__toString()" manual page:
  *
  *   Warning
- *   You cannot throw an exception from within a __toString() method. Doing
- *   so will result in a fatal error.
+ *   It was not possible to throw an exception from within a __toString()
+ *   method prior to PHP 7.4.0. Doing so will result in a fatal error.
  *
  * However, this only applies to implicit invocation by the language runtime.
  * Application code can safely call `__toString()` directly without any effect
- * on exception handling behavior. Very cool.
+ * on exception handling behavior. Very cool, except that prior to PHP 7.4,
+ * direct calls to `__toString()` can return non-strings without throwing an
+ * Exception.
  *
  * We also reject arrays. PHP casts them to the string "Array". This behavior
  * is, charitably, evil.
@@ -1831,7 +1827,7 @@ function phutil_decode_mime_header($header) {
  */
 function phutil_string_cast($value) {
   if (is_array($value)) {
-    throw new Exception(
+    throw new InvalidArgumentException(
       pht(
         'Value passed to "phutil_string_cast()" is an array; arrays can '.
         'not be sensibly cast to strings.'));
@@ -1978,8 +1974,12 @@ function phutil_is_interactive() {
   return false;
 }
 
+/**
+ * @param mixed $message
+ * @return string
+ */
 function phutil_encode_log($message) {
-  return addcslashes($message, "\0..\37\\\177..\377");
+  return addcslashes((string)$message, "\0..\37\\\177..\377");
 }
 
 /**
@@ -1995,7 +1995,6 @@ function phutil_glue(array $list, $glue) {
   $last_key = last_key($list);
 
   $keys = array();
-  $values = array();
 
   $tmp = $list;
 
@@ -2047,7 +2046,7 @@ function phutil_preg_match(
 
   $matches = null;
   $result = @preg_match($pattern, $subject, $matches, $flags, $offset);
-  if ($result === false || $result === null) {
+  if ($result === false) {
     phutil_raise_preg_exception(
       'preg_match',
       array(
@@ -2085,6 +2084,35 @@ function phutil_preg_match_all(
   return $matches;
 }
 
+function phutil_preg_replace_callback(
+   $pattern,
+   $callback,
+   $subject,
+   $limit = -1,
+   &$count = null) {
+
+  $result = @preg_replace_callback(
+    $pattern,
+    $callback,
+    $subject,
+    $limit,
+    $count);
+
+  if ($result === false || $result === null) {
+    phutil_raise_preg_exception(
+      'preg_replace_callback',
+      array(
+        $pattern,
+        $callback,
+        $subject,
+        $limit,
+        $count,
+      ));
+  }
+
+  return $result;
+}
+
 function phutil_raise_preg_exception($function, array $argv) {
   $trap = new PhutilErrorTrap();
 
@@ -2099,6 +2127,8 @@ function phutil_raise_preg_exception($function, array $argv) {
       @preg_match_all($argv[0], $argv[1], $argv[2], $argv[3], $argv[4]);
       break;
   }
+  $preg_last_error = preg_last_error();
+
   $error_message = $trap->getErrorsAsString();
 
   $trap->destroy();
@@ -2120,7 +2150,28 @@ function phutil_raise_preg_exception($function, array $argv) {
       $error_message);
   }
 
-  $message = implode("\n\n", $message);
+  // TODO move to preg_last_error_msg in T16903.
+
+  if ($preg_last_error !== PREG_NO_ERROR) {
+    $last_error_messages = array(
+      PREG_INTERNAL_ERROR => 'PREG_INTERNAL_ERROR',
+      PREG_BACKTRACK_LIMIT_ERROR => 'PREG_BACKTRACK_LIMIT_ERROR',
+      PREG_RECURSION_LIMIT_ERROR => 'PREG_RECURSION_LIMIT_ERROR',
+      PREG_BAD_UTF8_ERROR => 'PREG_BAD_UTF8_ERROR',
+      PREG_BAD_UTF8_OFFSET_ERROR => 'PREG_BAD_UTF8_OFFSET_ERROR',
+      PREG_JIT_STACKLIMIT_ERROR => 'PREG_JIT_STACKLIMIT_ERROR',
+    );
+
+    $last_error_message =
+      idx($last_error_messages, $preg_last_error) ??
+      pht('Unknown error code %s', $preg_last_error);
+
+    $message[] = pht(
+      'Regular expression engine emitted message code: %s',
+      $last_error_message);
+  }
+
+  $message = implode('. ', $message);
 
   throw new PhutilRegexException($message);
 }
@@ -2135,7 +2186,7 @@ function phutil_raise_preg_exception($function, array $argv) {
  * This method raises an exception if passed a value which is neither null
  * nor a string.
  *
- * @param $value Value to test.
+ * @param mixed $value Value to test.
  * @return bool True if the parameter is a nonempty string.
  */
 function phutil_nonempty_string($value) {
@@ -2169,7 +2220,7 @@ function phutil_nonempty_string($value) {
  *
  * This method raises an exception if passed any other value.
  *
- * @param $value Value to test.
+ * @param mixed $value Value to test.
  * @return bool True if the parameter is a nonempty, stringlike value.
  */
 function phutil_nonempty_stringlike($value) {
@@ -2219,7 +2270,7 @@ function phutil_nonempty_stringlike($value) {
  *
  * This method raises an exception if passed any other value.
  *
- * @param $value Value to test.
+ * @param mixed $value Value to test.
  * @return bool True if the parameter is a nonempty, scalar value.
  */
 function phutil_nonempty_scalar($value) {

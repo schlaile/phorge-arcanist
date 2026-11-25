@@ -1315,7 +1315,6 @@ EOTEXT
       }
     }
 
-    $message = null;
     if ($is_create) {
       $message_file = $this->getArgument('message-file');
       if ($message_file) {
@@ -2840,10 +2839,10 @@ EOTEXT
   }
 
   private function getDependsOnRevisionRef() {
-    // TODO: Restore this behavior after updating for toolsets. Loading the
+    // TODO: Restore the behavior below after updating for toolsets. Loading the
     // required hardpoints currently depends on a "WorkingCopy" existing.
     return null;
-
+/*
     $api = $this->getRepositoryAPI();
     $base_ref = $api->getBaseCommitRef();
 
@@ -2880,6 +2879,7 @@ EOTEXT
     }
 
     return head($revision_refs);
+*/
   }
 
 }

@@ -183,7 +183,6 @@ final class ArcanistMercurialLandEngine
    */
   private function newOntoRemote(array $symbols) {
     assert_instances_of($symbols, ArcanistLandSymbol::class);
-    $api = $this->getRepositoryAPI();
     $log = $this->getLogEngine();
 
     $remote = $this->getOntoRemoteArgument();
@@ -211,8 +210,6 @@ final class ArcanistMercurialLandEngine
 
       return $remote;
     }
-
-    $api = $this->getRepositoryAPI();
 
     $default_remote = 'default';
 
@@ -257,8 +254,6 @@ final class ArcanistMercurialLandEngine
 
       return $onto;
     }
-
-    $api = $this->getRepositoryAPI();
 
     $default_onto = 'default';
 
@@ -585,7 +580,6 @@ final class ArcanistMercurialLandEngine
 
   private function fetchTarget(ArcanistLandTarget $target) {
     $api = $this->getRepositoryAPI();
-    $log = $this->getLogEngine();
 
     $target_name = $target->getRef();
 
@@ -1045,9 +1039,7 @@ final class ArcanistMercurialLandEngine
         );
       }
 
-      if ($tail) {
-        $tail_pass_commands[] = $tail;
-      }
+      $tail_pass_commands[] = $tail;
     }
 
     return array(
@@ -1060,7 +1052,6 @@ final class ArcanistMercurialLandEngine
 
   protected function cascadeState(ArcanistLandCommitSet $set, $into_commit) {
     $api = $this->getRepositoryAPI();
-    $log = $this->getLogEngine();
 
     // This has no effect when we're executing a merge strategy.
     if (!$this->isSquashStrategy()) {
@@ -1250,7 +1241,6 @@ final class ArcanistMercurialLandEngine
   }
 
   protected function didHoldChanges($into_commit) {
-    $log = $this->getLogEngine();
     $local_state = $this->getLocalState();
 
     $message = pht(
